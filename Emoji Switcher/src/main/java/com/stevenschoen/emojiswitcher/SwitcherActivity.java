@@ -20,6 +20,8 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.stericson.RootTools.RootTools;
 import com.stevenschoen.emojiswitcher.billing.IabHelper;
 import com.stevenschoen.emojiswitcher.billing.IabResult;
@@ -40,7 +42,7 @@ public class SwitcherActivity extends Activity {
     private Spinner spinnerInstallEmojis;
     private ArrayAdapter<EmojiSet> emojiSetsAdapter;
 
-    private ArrayList<EmojiSet> emojiSets = new ArrayList<>();
+    private List<EmojiSet> emojiSets = new ArrayList<>();
     private EmojiSet currentSystemEmojiSet;
 
     EmojiSwitcherUtils emojiSwitcherUtils;
@@ -56,11 +58,11 @@ public class SwitcherActivity extends Activity {
 
         emojiSwitcherUtils = new EmojiSwitcherUtils();
 
-        verifyRoot();
+//        verifyRoot();
 
-        if (EmojiSwitcherUtils.isRootReady()) {
+//        if (EmojiSwitcherUtils.isRootReady()) {
             init();
-        }
+//        }
     }
 
     private void init() {
@@ -181,9 +183,14 @@ public class SwitcherActivity extends Activity {
                     @Override
                     protected void onPostExecute(ArrayList<EmojiSet> emojiSets) {
                         super.onPostExecute(emojiSets);
-                        SwitcherActivity.this.emojiSets.clear();
-                        SwitcherActivity.this.emojiSets.addAll(emojiSets);
+                        emojiSets.clear();
+                        emojiSets.addAll(emojiSets);
                         emojiSetsAdapter.notifyDataSetChanged();
+
+                        Intent tryEmojiIntent = new Intent(SwitcherActivity.this, TryEmojiActivity.class);
+                        tryEmojiIntent.putExtra("emojiSets", emojiSets);
+                        startActivity(tryEmojiIntent);
+
                         try {
                             FileUtils.write(doneCopyingFile, String.valueOf(finalVersionCode));
                         } catch (IOException e) {
@@ -219,21 +226,23 @@ public class SwitcherActivity extends Activity {
     }
 
 	private void setupBilling() {
-		billingHelper = new IabHelper(this, EmojiSwitcherUtils.PLAY_LICENSING_KEY);
-		billingHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
-			@Override
-			public void onIabSetupFinished(IabResult result) {
-				if (result.isSuccess()) {
-					checkAds();
-				} else {
-					Log.d("asdf", "Problem setting up in-app billing: " + result);
-				}
-			}
-		});
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
+            billingHelper = new IabHelper(this, EmojiSwitcherUtils.PLAY_LICENSING_KEY);
+            billingHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+                @Override
+                public void onIabSetupFinished(IabResult result) {
+                    if (result.isSuccess()) {
+                        checkAds();
+                    } else {
+                        Log.d("asdf", "Problem setting up in-app billing: " + result);
+                    }
+                }
+            });
+        }
 	}
 
 	private void checkAds() {
-		List additionalSkuList = new ArrayList();
+		List<String> additionalSkuList = new ArrayList<>();
 		additionalSkuList.add(EmojiSwitcherUtils.SKU_REMOVEADS);
 		billingHelper.queryInventoryAsync(true, additionalSkuList,
 				new IabHelper.QueryInventoryFinishedListener() {

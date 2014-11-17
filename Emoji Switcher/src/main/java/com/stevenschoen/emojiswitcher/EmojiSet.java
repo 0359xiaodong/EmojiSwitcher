@@ -1,5 +1,8 @@
 package com.stevenschoen.emojiswitcher;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 
@@ -10,7 +13,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EmojiSet {
+public class EmojiSet implements Parcelable {
     private String friendlyName;
     private File path;
     private String hash;
@@ -57,4 +60,32 @@ public class EmojiSet {
         filenamesToFriendlyNames.put("LGG3", "LG G3");
         filenamesToFriendlyNames.put("SamsungS4", "Samsung S4");
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.friendlyName);
+        dest.writeSerializable(this.path);
+        dest.writeString(this.hash);
+    }
+
+    private EmojiSet(Parcel in) {
+        this.friendlyName = in.readString();
+        this.path = (File) in.readSerializable();
+        this.hash = in.readString();
+    }
+
+    public static final Parcelable.Creator<EmojiSet> CREATOR = new Parcelable.Creator<EmojiSet>() {
+        public EmojiSet createFromParcel(Parcel source) {
+            return new EmojiSet(source);
+        }
+
+        public EmojiSet[] newArray(int size) {
+            return new EmojiSet[size];
+        }
+    };
 }
